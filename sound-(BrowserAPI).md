@@ -27,7 +27,7 @@ sound.paused; // true یا false
 sound.duration;
 ```
 
-Audio در واقع ویژگی ای هستش که Browser در اختیار ما قرار میده
+و Audio در واقع ویژگی ای هستش که Browser در اختیار ما قرار میده
 
 ```jsx
 import clickSound from './ClickSound.m4a';
