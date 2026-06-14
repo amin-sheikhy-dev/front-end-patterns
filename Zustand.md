@@ -193,6 +193,8 @@ export const useFavoriteStore = create<FavoriteStore>()(
 
 ### بهترین پترن ها برای استفاده
 
+بهترین شیوه استفاده:
+
 ```ts
 const todos = useTodoStore((state) => state.todos);
 const addTodo = useTodoStore((state) => state.addTodo);
@@ -200,7 +202,7 @@ const addTodo = useTodoStore((state) => state.addTodo);
 const { toggleTodo, removeTodo, addTodo } = useTodoStore();
 ```
 
-بدترین و غیر بهینه ترین نوع استفاده
+بدترین و غیر بهینه ترین نوع استفاده:
 
 ```ts
 const store = useTodoStore();
