@@ -11,11 +11,15 @@
 ```tsx
 'use client';
 
-import { login } from '@/lib/login';
+import { FormState, signUp } from '@/actions/sign-up';
 import { useActionState } from 'react';
 
-export default function LoginPage() {
-  const [state, formAction, isPending] = useActionState(login, {});
+const initialState: FormState = {
+  errors: {},
+};
+
+export default function SignUpPage() {
+  const [state, formAction, isPending] = useActionState(signUp, initialState);
 
   return (
     <form action={formAction}>
@@ -23,7 +27,6 @@ export default function LoginPage() {
         <label htmlFor="email">Email</label>
 
         <input type="email" id="email" name="email" placeholder="example@gmail.com" />
-
         {state.errors?.email && <p>{state.errors.email}</p>}
       </div>
 
@@ -31,12 +34,11 @@ export default function LoginPage() {
         <label htmlFor="password">Password</label>
 
         <input type="password" id="password" name="password" placeholder="••••••••" />
-
         {state.errors?.password && <p>{state.errors.password}</p>}
       </div>
 
       <button type="submit" disabled={isPending}>
-        {isPending ? 'Wait...' : 'Login'}
+        {isPending ? 'Wait...' : 'Sign Up'}
       </button>
     </form>
   );
@@ -67,10 +69,10 @@ import { redirect } from 'next/navigation';
 
 export interface FormState {
   errors?: { email: string; password: string };
-  userInfo?: { email: string; name: string };
+  userInfo?: { email?: string; name?: string };
 }
 
-export async function login(prevState: FormState, formData: FormData): Promise<FormState> {
+export async function login(_: FormState, formData: FormData): Promise<FormState> {
   // گرفتن دیتا های فرم
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
@@ -89,7 +91,7 @@ export async function login(prevState: FormState, formData: FormData): Promise<F
   const token: string = crypto.randomUUID(); // یک استرینگ عول یونیک و یونیک بسازه
 
   // این کوکی مخصوص سروره
-  cookieStore.set('auth-token', token, {
+  cookieStore.set('auth', token, {
     httpOnly: true, // فقط سرور میتونه بخونش
 
     // وقتی حالت پروداکشن باشه ترو میره که در اصل باید ترو باشه
@@ -113,8 +115,8 @@ export async function login(prevState: FormState, formData: FormData): Promise<F
 
   // توکن کلاینت
   // در حالت تمرینی مهم نیست ولی در کل بهتره کوکی ها داخل کلاینت ذخیره نشن و هرجا لازم بود از ای پی آی روت نکست یا از سرور گرفته بشه
-  const clientToken = JSON.stringify(userInfo);
-  cookieStore.set('client-token', clientToken, {
+  const userJson = JSON.stringify(userInfo);
+  cookieStore.set('user', userJson, {
     httpOnly: false,
     secure: process.env.NODE_ENV === 'production',
     maxAge: 60 * 60 * 24,
@@ -153,8 +155,8 @@ export function proxy(req: NextRequest) {
   // دریافت توکن که آیا کاربر احراز هویت شده یا خیر - کوکی 2 پراپرتی اسم و مقدار داره
   // در صورتی که کوکی وجود نداشته باشه انفایند برمیگردونه
 
-  const token: string | undefined = req.cookies.get('auth-token')?.value; // این مقدار کوکی رو میده
-  const token2 = req.cookies.get('auth-token')?.name; // این اسم کوکی رو میده
+  const token: string | undefined = req.cookies.get('auth')?.value; // این مقدار کوکی رو میده
+  const token2 = req.cookies.get('auth')?.name; // این اسم کوکی رو میده
 
   // تعریف مسیرهایی که نیاز به محافظت داره
   const protectedRoute: string[] = ['/blog', '/menu'];
@@ -202,9 +204,14 @@ import { cookies } from 'next/headers';
 
 export default async function UserProfilePage() {
   // cookies
-  const cookie = await cookies();
-  const token = cookie.get('client-token');
-  const clientCookie = token ? JSON.parse(token.value) : null;
+  const cookieStore = await cookies();
+  const userJson = cookieStore.get('user');
+  const user = userJson ? JSON.parse(userJson.value) : null;
+
+  // یا
+
+  const cookieStore = await cookies();
+  const authToken: string | undefined = cookieStore.get('auth')?.value;
 }
 ```
 
@@ -220,11 +227,11 @@ import { redirect } from 'next/navigation';
 
 // اگه بخای از این فانکشن در کلاینت استفاده کنی باید از هوک یوز ترانزیشن استفاده کنی
 export async function logout() {
-  const cookie = await cookies();
+  const cookieStore = await cookies();
 
   // پاک کردن کوکی‌ها
-  cookie.delete('auth-token');
-  cookie.delete('client-token');
+  cookieStore.delete('auth-token');
+  cookieStore.delete('client-token');
 
   redirect('/login');
 }

@@ -21,14 +21,16 @@
 نکست جی اس خودش `searchParams` را به صفحه پاس می‌دهد:
 
 ```tsx
-export default function Page({ searchParams }) {
+export default async function Page({ searchParams }: { searchParams: Promise<Record<string, string>> }) {
+  const params: Record<string, string> = await searchParams;
+
   return (
     <div>
       <h1>Blog Page</h1>
 
-      <p>Tag: {searchParams.tag}</p>
+      <p>Tag: {params.tag}</p>
 
-      <p>Sort: {searchParams.sort}</p>
+      <p>Sort: {params.sort}</p>
     </div>
   );
 }
@@ -165,5 +167,62 @@ export default async function RoomsPage({ searchParams }: RoomsPageProps) {
       </main>
     </div>
   );
+}
+```
+
+---
+
+مثال پیشرفته
+
+کامپوننت کلاینت
+
+```tsx
+export default function Search() {
+  const router = useRouter();
+
+  const [date, setDate] = useState<string[]>([]);
+  const [query, setQuery] = useState<string>('');
+  const [domains, setDomains] = useState<string[]>([]);
+  const [searchInTitle, setSearchInTitle] = useState<boolean>(false);
+
+  function handleSearch(): void {
+    if (!query && domains.length === 0) return;
+
+    let url = '/search?';
+
+    if (query.trim()) url += `query=${encodeURIComponent(query)}`;
+
+    if (domains.length > 0) {
+      const d = domains.length > 1 ? domains.join(',') : domains[0];
+      url += `${url.includes('query=') ? '&' : ''}domains=${d}`;
+    }
+
+    if (date.length === 2) url += `&fromDate=${date[0]}&toDate=${date[1]}`;
+
+    if (searchInTitle && query.trim()) url += '&searchInTitle=yes';
+
+    url += '&page=1';
+
+    router.push(url);
+  }
+
+  return <div>....</div>;
+}
+```
+
+```tsx
+import { searchNews } from '@/lib/api/news';
+import { Data } from '@/types/types';
+
+export const dynamic = 'force-dynamic';
+
+export default async function SearchPage({ searchParams }: { searchParams: Promise<Record<string, string>> }) {
+  const params: Record<string, string> = await searchParams;
+
+  const data: Data | null = params.query || params.domains ? await searchNews(params) : null;
+
+  const currentPage: number = Number(params.page) || 1;
+
+  return <div>....</div>;
 }
 ```
